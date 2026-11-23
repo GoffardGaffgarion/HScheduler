@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Diário de classe da Home School Escola de Música.">
+    <meta name="theme-color" content="#02436b">
+    <title>Home School · HScheduler</title>
+    <link rel="icon" type="image/jpeg" href="assets/home-school.jpg">
+    <link rel="stylesheet" href="style.css">
+    <script defer src="vendor/xlsx-0.20.3.min.js"></script>
+    <script defer src="storage.js"></script>
+    <script defer src="app.js"></script>
+    <script defer src="diary.js"></script>
+    <script defer src="dashboard.js"></script>
+    <script defer src="agenda-import.js"></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#workspace">Ir para o conteúdo</a>
+    <header class="sidebar">
+        <a class="brand" href="index.html">
+            <img src="assets/home-school.jpg" alt="" width="60" height="60">
+            <span><strong>Home School</strong><small>Ensino à domicílio</small></span>
+        </a>
+        <nav class="primary-nav" aria-label="Navegação principal">
+            <button type="button" id="goDiary" aria-current="page" class="active"><span data-icon="book"></span>
+                Diário</button>
+            <button type="button" id="goCalendar"><span data-icon="calendar"></span> Calendário</button>
+            <button type="button" id="goSources"><span data-icon="document"></span> Fontes</button>
+        </nav>
+        <div class="sidebar-footer"><span data-icon="pin"></span><span><strong>Atendimento presencial em São
+                    Paulo</strong><small>Ou online em qualquer lugar</small></span></div>
+    </header>
+    <main id="workspace" tabindex="-1">
+        <header class="page-head">
+            <h1 id="pageTitle">Diário de classe</h1>
+            <div class="actions">
+                <button class="plain" id="openImport"><span data-icon="upload"></span> Importar agenda Excel</button>
+                <button class="primary" id="addSchool"><span data-icon="plus"></span> <span id="addSchoolLabel">Nova
+                        escola</span></button>
+            </div>
+        </header>
+        <p id="storageError" class="error" role="alert" hidden></p>
+        <div id="scope" class="panel diary-scope">
+            <div class="networks" id="networks" role="group" aria-label="Vínculos e Dashboard">
+                <button type="button" id="goDashboard" aria-controls="dashboardPage"
+                    aria-pressed="false">Dashboard</button>
+            </div>
+            <div class="filters" id="scopeFilters">
+                <div class="school-field"><label><span id="scopeLabel">Escola</span><select
+                            id="school"></select></label><button type="button" id="editSchool" class="plain">Editar
+                        horários</button></div>
+                <label>Ano letivo<input id="year" type="number" min="1900" max="2199" step="1"></label>
+                <label class="calendar-filter">Período<select id="period">
+                        <option value="all">Ano inteiro</option>
+                        <option value="first">1º semestre</option>
+                        <option value="second">2º semestre</option>
+                        <option value="custom">Personalizado</option>
+                    </select></label>
+                <label class="calendar-filter">Dia da semana<select id="weekday"></select></label>
+                <div class="switch calendar-filter" aria-label="Visualização"><button
+                        data-view="month">Mensal</button><button data-view="year">Anual</button></div>
+                <div class="date-range" id="range" hidden><label>De<input id="from" type="date"></label><label>Até<input
+                            id="to" type="date"></label></div>
+            </div>
+        </div>
+        <section id="diaryPage" class="panel diary" aria-labelledby="diaryHeading">
+            <div class="diary-head">
+                <h2 id="diaryHeading">Aulas</h2>
+                <div class="actions"><button class="plain" id="newClass" type="button">Nova turma</button><button
+                        class="primary" id="newLesson" type="button"><span data-icon="plus"></span> Nova aula</button>
+                </div>
+            </div>
+            <div class="diary-filters" id="diaryFilters">
+                <div class="class-filter"><label>Turma<select id="diaryClass"></select></label><button class="plain"
+                        id="editClass" type="button">Editar turma</button></div>
+                <label>Mês<select id="diaryMonth">
+                        <option value="">Ano inteiro</option>
+                    </select></label>
+            </div>
+            <div id="diaryStats" class="diary-stats"></div>
+            <div id="diaryContent"></div>
+        </section>
+        <div id="calendarPage" hidden>
+            <div id="stats" class="stats"></div>
+            <div id="notice" class="notice"></div>
+            <section class="panel calendar" aria-labelledby="calendarTitle">
+                <div class="calendar-head">
+                    <div>
+                        <h2 id="calendarTitle"></h2>
+                        <div id="calendarCaption" class="muted"></div>
+                    </div>
+                    <div class="month-controls" id="monthControls"><button class="icon" id="prev"
+                            aria-label="Mês anterior">‹</button><button class="icon" id="next"
+                            aria-label="Próximo mês">›</button></div>
+                </div>
+                <div id="calendarContent"></div>
+            </section>
+        </div>
+        <div id="dashboardPage" hidden>
+            <form class="panel dashboard-filters" id="dashboardFilters" aria-label="Filtrar aulas">
+                <label>Aluno<select id="dashboardStudent" name="student">
+                        <option value="">Todos os alunos</option>
+                    </select></label>
+                <label>Presença<select name="attendance">
+                        <option value="">Todas</option>
+                        <option value="present">Presença</option>
+                        <option value="absent">Falta</option>
+                        <option value="excused">Falta justificada</option>
+                        <option value="unrecorded">Sem registro</option>
+                    </select></label>
+                <label>Dia da semana<select id="dashboardWeekday" name="weekday">
+                        <option value="">Todos os dias</option>
+                    </select></label>
+                <label>De<input type="date" name="from" min="1900-01-01" max="2199-12-31"
+                        aria-describedby="dashboardDateError"></label>
+                <label>Até<input type="date" name="to" min="1900-01-01" max="2199-12-31"
+                        aria-describedby="dashboardDateError"></label>
+                <button type="button" class="plain" id="clearDashboardFilters">Limpar filtros</button>
+                <p id="dashboardDateError" class="error" role="alert"></p>
+            </form>
+            <div id="dashboardResults">
+                <section class="panel dashboard-report" aria-labelledby="dashboardReportTitle">
+                    <h2 id="dashboardReportTitle">Relatório de aulas</h2>
+                    <dl class="dashboard-totals" aria-live="polite">
+                        <div>
+                            <dt>Aulas dadas</dt>
+                            <dd id="dashboardHeld">0</dd>
+                        </div>
+                        <div>
+                            <dt>Aulas cadastradas</dt>
+                            <dd id="dashboardTotal">0</dd>
+                        </div>
+                    </dl>
+                    <div class="dashboard-progress">
+                        <progress id="dashboardProgress" value="0" max="100"
+                            aria-label="Proporção de aulas dadas"></progress>
+                        <span id="dashboardRate">—</span>
+                    </div>
+                    <p class="muted">Totais conforme os filtros. Aulas canceladas entram no total de cadastradas.</p>
+                </section>
+                <section class="panel dashboard-lessons" aria-labelledby="dashboardLessonsTitle">
+                    <h2 id="dashboardLessonsTitle">Aulas cadastradas</h2>
+                    <p class="empty" id="dashboardEmpty" role="status" hidden></p>
+                    <div class="table-wrap" id="dashboardTable" tabindex="0" role="region"
+                        aria-label="Lista de aulas cadastradas">
+                        <table aria-labelledby="dashboardLessonsTitle">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><button class="dashboard-sort" type="button" data-sort="date">Data <span aria-hidden="true"></span></button></th>
+                                    <th scope="col"><button class="dashboard-sort" type="button" data-sort="target">Aluno ou turma <span aria-hidden="true"></span></button></th>
+                                    <th scope="col"><button class="dashboard-sort" type="button" data-sort="content">Conteúdo <span aria-hidden="true"></span></button></th>
+                                    <th scope="col"><button class="dashboard-sort" type="button" data-sort="status">Situação <span aria-hidden="true"></span></button></th>
+                                    <th scope="col"><button class="dashboard-sort" type="button" data-sort="attendance">Presença <span aria-hidden="true"></span></button></th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardRows"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+        <section id="sourcesPage" hidden>
+            <div class="panel sources">
+                <h2>Calendários oficiais</h2>
+                <p class="muted">Selecione o ano, consulte as publicações e lance as datas do documento. O calendário e
+                    os totais são recalculados ao salvar.</p><label>Ano letivo<input id="sourceYear" type="number"
+                        min="1900" max="2199" step="1"></label>
+                <div id="sourceList"></div>
+            </div>
+            <div class="panel sources">
+                <h2>Atualizar calendário</h2>
+                <p class="muted">A base é compartilhada pela rede. Para uma unidade específica, selecione a escola. Use
+                    um período letivo completo para confirmar as datas regulares e lance feriados locais, recessos e
+                    suspensões como exceções.</p>
+                <form id="ruleForm">
+                    <div class="form-grid"><label>Aplicar a<select name="target"
+                                id="ruleTarget"></select></label><label>Tipo<select name="type">
+                                <option value="term">Período letivo completo</option>
+                                <option value="holiday">Feriado</option>
+                                <option value="recess">Recesso</option>
+                                <option value="vacation">Férias</option>
+                                <option value="closed">Suspensão de aula</option>
+                                <option value="pending">A confirmar</option>
+                                <option value="class">Aula confirmada</option>
+                            </select></label><label>Data inicial<input name="start" type="date"
+                                required></label><label>Data final<input name="end" type="date"
+                                required></label><label>Descrição<input name="label" maxlength="100"
+                                placeholder="Ex. Recesso de julho" required></label><label>Link do documento<input
+                                name="url" type="url" placeholder="https://"></label></div>
+                    <p id="ruleError" class="error" role="alert"></p><button class="primary" type="submit">Salvar
+                        atualização</button><button class="plain" id="cancelRule" type="button" hidden>Cancelar
+                        edição</button>
+                </form>
+                <div id="rules"></div>
+            </div>
+        </section>
+        <footer><span>HScheduler</span><span>Dados salvos neste navegador</span></footer>
+    </main>
+    <dialog id="schoolDialog" aria-labelledby="schoolTitle">
+        <form id="schoolForm">
+            <div class="dialog-head">
+                <h2 id="schoolTitle">Nova escola</h2><button type="button" class="icon close"
+                    aria-label="Fechar">×</button>
+            </div><label><span id="schoolNameLabel">Nome da escola</span><input name="name" maxlength="80"
+                    required></label><label>Tipo de vínculo<select name="network" id="schoolNetwork">
+                    <option value="municipal">Municipal</option>
+                    <option value="estadual">Estadual</option>
+                    <option value="particular">Escola particular</option>
+                    <option value="individual">Aluno particular</option>
+                </select></label>
+            <fieldset id="schoolScheduleFields">
+                <legend>Aulas por dia da semana</legend>
+                <p class="muted">Use 0 nos dias em que você não dá aula.</p>
+                <label id="scheduleStartField" hidden>Grade válida a partir de<input type="date" name="scheduleStart"
+                        min="1900-01-01" max="2199-12-31"></label>
+                <div id="schoolSchedule" class="schedule"></div>
+            </fieldset>
+            <p id="schoolError" class="error" role="alert"></p>
+            <div class="actions"><button class="primary" id="saveSchool" type="submit">Adicionar escola</button><button
+                    class="plain danger" id="removeSchool" type="button" hidden>Excluir escola</button></div>
+        </form>
+    </dialog>
+    <dialog id="classDialog" aria-labelledby="classTitle">
+        <form id="classForm">
+            <div class="dialog-head">
+                <h2 id="classTitle">Nova turma</h2><button type="button" class="icon close"
+                    aria-label="Fechar">×</button>
+            </div>
+            <div class="form-pair"><label>Nome da turma<input name="name" maxlength="80" required></label><label>
+                    Disciplina<input name="subject" maxlength="80"></label></div>
+            <fieldset>
+                <legend>Alunos da turma</legend>
+                <div id="classRoster"></div><button class="plain" type="button" id="addMember">Adicionar aluno</button>
+            </fieldset>
+            <p class="error" id="classError" role="alert"></p><button type="submit" class="primary">Salvar
+                turma</button>
+        </form>
+    </dialog>
+    <dialog id="lessonDialog" aria-labelledby="lessonTitle">
+        <form id="lessonForm">
+            <div class="dialog-head">
+                <h2 id="lessonTitle">Nova aula</h2><button type="button" class="icon close"
+                    aria-label="Fechar">×</button>
+            </div>
+            <div class="form-pair"><label id="lessonClassField">Turma<select name="classId"></select></label><label>
+                    Data<input type="date" name="date" min="1900-01-01" max="2199-12-31" required></label></div>
+            <div class="form-pair"><label>Início<input type="time" name="start"></label><label>
+                    Fim<input type="time" name="end"></label></div>
+            <label>Situação<select name="status">
+                    <option value="scheduled">Agendada</option>
+                    <option value="held">Realizada</option>
+                    <option value="cancelled">Cancelada</option>
+                </select></label>
+            <label>Conteúdo da aula<textarea name="content" rows="3" maxlength="2000"></textarea></label>
+            <label>Observações<textarea name="notes" rows="2" maxlength="2000"></textarea></label>
+            <fieldset id="lessonAttendance">
+                <legend>Chamada</legend>
+                <p id="attendanceHint" class="muted">Marque a aula como realizada para preencher a chamada.</p>
+                <div id="lessonRoster" class="lesson-roster"></div>
+            </fieldset>
+            <div class="lesson-bulk-edit" id="lessonBulkEdit" hidden>
+                <label class="check"><input name="applyToLater" type="checkbox"
+                        aria-describedby="lessonBulkScope lessonBulkDetails">
+                    Editar em todas as aulas</label>
+                <p class="muted" id="lessonBulkScope"></p>
+                <p class="muted" id="lessonBulkDetails" hidden>Alterar a data desloca as aulas pelo mesmo intervalo. A
+                    chamada é copiada para alunos em comum nas aulas realizadas.</p>
+            </div>
+            <p id="lessonError" class="error" role="alert"></p>
+            <div class="actions"><button type="submit" class="primary">Salvar aula</button><button type="button"
+                    id="removeLesson" class="plain" hidden>Excluir aula</button></div>
+        </form>
+    </dialog>
+    <dialog id="importDialog" aria-labelledby="importTitle">
+        <form id="importForm">
+            <div class="dialog-head">
+                <h2 id="importTitle">Importar agenda Excel</h2><button type="button" class="icon close"
+                    aria-label="Fechar">×</button>
+            </div>
+            <label>Planilha (.xlsx)<input id="agendaFile" name="file" type="file"
+                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    aria-describedby="importGuide importError" required></label>
+            <div class="form-pair"><label>Destino<select id="importSchool" name="school"
+                        required></select></label><label id="importClassField">Turma<select id="importClass"
+                        name="classId"></select></label></div>
+            <label id="importSheetField" hidden>Aba da planilha<select id="importSheet" name="sheet"></select></label>
+            <p class="muted" id="importGuide">A prévia aparece ao escolher a planilha. Use uma aba com a coluna Data e,
+                opcionalmente, Presença. Caixas desmarcadas ficam sem registro.</p>
+            <div id="importPreview" aria-live="polite"></div>
+            <p id="importError" class="error" role="alert"></p>
+            <button type="submit" id="confirmImport" class="primary" disabled>Importar aulas</button>
+        </form>
+    </dialog>
+    <dialog id="dateDialog" aria-labelledby="dateTitle">
+        <form id="dateForm">
+            <div class="dialog-head">
+                <h2 id="dateTitle"></h2><button type="button" class="icon close" aria-label="Fechar">×</button>
+            </div>
+            <p id="dateBase" class="muted"></p><label>Calendário da escola<select name="override">
+                    <option value="">Usar calendário base</option>
+                    <option value="class">Confirmar aula</option>
+                    <option value="closed">Sem aula</option>
+                    <option value="pending">A confirmar</option>
+                </select></label><label id="overrideLabel">Motivo da alteração<input name="note" maxlength="120"
+                    placeholder="Ex. Reunião pedagógica"></label><label>Frequência<select name="attendance">
+                    <option value="">Sem registro</option>
+                    <option value="present">Presença</option>
+                    <option value="absent">Falta</option>
+                </select></label>
+            <div id="absenceFields" hidden><label>Motivo da ausência<textarea name="reason" rows="3"
+                        maxlength="500"></textarea></label><label class="check"><input name="excused" type="checkbox">
+                    Falta justificada</label></div>
+            <p id="dateError" class="error" role="alert"></p><button class="primary" type="submit">Salvar
+                registro</button>
+        </form>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+</body>
+
+</html>
